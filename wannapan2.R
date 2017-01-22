@@ -12,6 +12,7 @@ dat2$form[dat2$form == " 18-8-8"] <- "18-8-8"
 dat2$form[dat2$form == "16-20-21"] <- "16-20-20"
 dat2$form[dat2$form == " 46-0-0"] <- "46-0-0"
 dat2$form[dat2$form == "16-20-00"] <- "16-20-0"
+dat2$form[dat2$form == "46-0-0/16-20-0"] <- "16-20-0/46-0-0"
 
 unique(dat2$form)
 
@@ -20,8 +21,6 @@ dat2 <- dat2 %>% dplyr::mutate(province = as.character(province),
                              form = as.factor(form),
                              weight.level = as.character(weight.level)
                              )
-levels(dat2$form)
-
 
 
 dat2$stage <-  revalue(dat2$stage, c("1" = "15-30 DAS", 
@@ -42,8 +41,41 @@ dat2$fert <- ifelse(dat2$form == 0, "No", "Yes")
 
 
 dat2 %>% filter(province == "NKY") %>% ggplot(aes(fill = weight.level, x = form)) + 
-  geom_bar() + facet_grid(~stage)
+  geom_bar() + facet_grid(~stage) + theme(axis.text.x=element_text(angle=90, hjust=1, vjust = 0.5))
 
-dat2 %>% filter(province == "NKY") %>% ggplot(aes(fill = weight.level, x = fert)) + 
-  geom_bar() + facet_grid(~stage)
+dat2 %>% filter(province == "NKY") 
 
+dat2 %>% filter(province == "NKY") %>% ggplot(aes(x = fert)) +
+  geom_bar() + facet_grid(~stage) + 
+  labs(x = "Fertilizer use", y = "No. of farmers", 
+       title = "Number of farmers at Nakorn Nayok who apply fertilizer at different rice stages") + 
+  theme(plot.title = element_text(hjust = 0.5))
+
+ggsave("fert_use_NKY.jpg")
+
+dat2 %>% filter(province == "NKY", fert != "No") %>% 
+  ggplot(aes(x = form, fill = weight.level)) + geom_bar() + facet_grid(~stage, scales = "free_x") + 
+  theme(axis.text.x=element_text(angle=90, hjust=1, vjust = 0.5), plot.title = element_text(hjust = 0.5)) +
+  labs(x = "Fertilizer formula", y = "No. of farmers", 
+       title = "Number of farmers apply fertilizer at different rice stages")
+ggsave("fert_form_use_NKY.jpg")
+
+dat2 %>% filter(province == "NKY", fert == "Yes") %>% ggplot(aes(x = form)) + 
+  geom_bar() + facet_grid(~stage) + theme(axis.text.x=element_text(angle=90, hjust=1, vjust = 0.5))
+
+###== PCR
+
+dat2 %>% filter(province == "PCR") %>% ggplot(aes(x = fert)) +
+  geom_bar() + facet_grid(~stage) + 
+  labs(x = "Fertilizer use", y = "No. of farmers", 
+       title = "Number of farmers at Prachin Buri who apply fertilizer at different rice stages") + 
+  theme(plot.title = element_text(hjust = 0.5))
+
+ggsave("fert_use_PCR.jpg")
+
+dat2 %>% filter(province == "PCR", fert != "No") %>% 
+  ggplot(aes(x = form, fill = weight.level)) + geom_bar() + facet_grid(~stage, scales = "free_x") + 
+  theme(axis.text.x=element_text(angle=90, hjust=1, vjust = 0.5), plot.title = element_text(hjust = 0.5)) +
+  labs(x = "Fertilizer formula", y = "No. of farmers", 
+       title = "Number of farmers apply fertilizer at different rice stages")
+ggsave("fert_form_use_PCR.jpg")
