@@ -40,6 +40,6 @@ long.gm_swing.mean %>% ggplot() + geom_boxplot(aes(x= variable, y= value)) +
   theme(legend.position="none")+ facet_grid(var~age, scales = "free_y") 
 
 
-temp_gm <- mean_gm_center %>% dplyr::select(var, date, silvershoot, temp_c, RH)
+#temp_gm <- mean_gm_center %>% dplyr::select(var, date, silvershoot, temp_c, RH)
 
 

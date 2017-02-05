@@ -4,6 +4,7 @@ library(data.table)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
+library(rpart)
 library(PerformanceAnalytics)
 
 gm_center <- loadWorkbook("gm_center.xls", create = TRUE)
@@ -68,7 +69,7 @@ gm_center.all <- gm_center.all %>% mutate(var = as.factor(var),
 
 mean_gm_center <- gm_center.all %>% dplyr::group_by(var, date) %>% summarise_each(funs = "mean", silvershoot:LF)
 
-long_mean_gm_center <- mean_gm_center  %>% filter(temp_c < 50) %>% gather(variable, value, -var, -date, -age)
+long_mean_gm_center <- mean_gm_center  %>% filter(temp_c < 50) %>% gather(variable, value, -var, -date)
 
 long_mean_gm_center$value[is.na(long_mean_gm_center$value)] <- 0
 
@@ -77,11 +78,11 @@ unique(long_mean_gm_center$variable)
 long_mean_gm_center %>% ggplot() + geom_line(aes(x= date, y = value)) + 
   facet_grid(variable~. , scales = "free_y")
 
-[1] "silvershoot"      "dwaft"            "nomalplant"       "gallmidge"        "nym_gall"        
-[6] "spider"           "mirid"            "long_crick"       "roove_beetle"     "ladybird"        
-[11] "ass_bug"          "ground_beetle"    "temp_c"           "RH"               "chelisoches"     
-[16] "WPH"              "BPH"              "GLH"              "ZZ"               "SB"              
-[21] "WM"               "Rhis"             "rice_grasshopper" "LF" 
+#[1] "silvershoot"      "dwaft"            "nomalplant"       "gallmidge"        "nym_gall"        
+#[6] "spider"           "mirid"            "long_crick"       "roove_beetle"     "ladybird"        
+#[11] "ass_bug"          "ground_beetle"    "temp_c"           "RH"               "chelisoches"     
+#[16] "WPH"              "BPH"              "GLH"              "ZZ"               "SB"              
+#[21] "WM"               "Rhis"             "rice_grasshopper" "LF" 
 
 long_mean_gm_center %>% filter(variable == c("silvershoot", "roove_beetle", "ground_beetle", "GLH", "SB", "LF")) %>% 
   ggplot() + geom_line(aes(x= date, y = value)) + facet_grid(variable~. , scales = "free_y")
@@ -100,6 +101,9 @@ silver_ptt1 <- mean_gm_ptt1 %>% ungroup() %>% select(year, month, silvershoot)
 
 silver_ptt1$silvershoot
 
+
+#### time series analysis ####
+
 time.ts <- silver_ptt1 %>% group_by(year, month)%>% summarise(silvershoot_mean = mean(silvershoot))%>% spread(month, silvershoot_mean)
 
 time.ts[is.na(time.ts)] <- 0
@@ -109,3 +113,26 @@ silvershoottimeseries <- ts(c(silver_ptt1$silvershoot,silver_ptt1$silvershoot), 
 
 silvertimeseriescomponents <- decompose(silvershoottimeseries)
 plot(silvertimeseriescomponents)
+
+mean_gm_center[is.na(mean_gm_center)] <- 0
+
+
+#### correlation analysis ###
+silver_weather <- mean_gm_center %>% select(temp_c, RH, silvershoot) %>% filter(temp_c < 50, RH >0)
+
+silver_weather$silver_found <- ifelse(silver_weather$silvershoot == 0, "no", "yes")
+
+
+fit <- rpart(as.factor(silver_found) ~ temp_c + RH,
+             data = silver_weather, 
+             method="anova")
+print(fit)
+plotcp(fit) 
+summary(fit)
+
+plot(fit)
+
+fit <- ctree(silver_found ~ temp_c + RH, 
+             data = silver_weather)
+
+plot(fit, main="Conditional Inference Tree for Kyphosis")
