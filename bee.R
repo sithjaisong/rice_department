@@ -4,13 +4,16 @@ library(data.table)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
+library(gridExtra)
 library(PerformanceAnalytics)
+library(psych)
+library(scales)
 
 gm_center <- loadWorkbook("gm_center.xls", create = TRUE)
 
-sheet1 <- readWorksheet(gm_center, sheet = 5, startRow = 3, endRow = 202, startCol = 1, header = FALSE)
-sheet1 
-sheet1 <- as.data.frame(sheet1)
+#sheet1 <- readWorksheet(gm_center, sheet = 5, startRow = 3, endRow = 202, startCol = 1, header = FALSE)
+#sheet1 
+#sheet1 <- as.data.frame(sheet1)
 
  as.character(sheet1[1,])
  
@@ -64,18 +67,46 @@ gm_center.all <- gm_center.all %>% mutate(var = as.factor(var),
                          rice_grasshopper = as.numeric(rice_grasshopper),
                          LF = as.numeric(LF))
 
+gm_center.all %>% filter(silvershoot > 0)
 
+mean_gm_center <- gm_center.all %>% dplyr::group_by(var, date, age) %>% summarise_each(funs = "mean", silvershoot:LF)
 
-mean_gm_center <- gm_center.all %>% dplyr::group_by(var, date) %>% summarise_each(funs = "mean", silvershoot:LF)
+mean.percent_gm <- mean_gm_center %>% group_by(var, date, age, temp_c, RH) %>% dplyr::summarise(ss.percent = silvershoot/nomalplant*100)
+
 
 long_mean_gm_center <- mean_gm_center  %>% filter(temp_c < 50) %>% gather(variable, value, -var, -date, -age)
 
+long_mean.percent_gm <- mean.percent_gm  %>% filter(temp_c < 50 , RH > 50) %>% gather(variable, value, -var, -date, -age)
+
+
 long_mean_gm_center$value[is.na(long_mean_gm_center$value)] <- 0
+
+long_mean.percent_gm$value[is.na(long_mean.percent_gm$value)] <- 0
+
+
 
 unique(long_mean_gm_center$variable)
 
-long_mean_gm_center %>% ggplot() + geom_line(aes(x= date, y = value)) + 
-  facet_grid(variable~. , scales = "free_y")
+long_mean_gm_center %>% dplyr::filter(variable == c("silvershoot","spider", "long_crick" ,"long")) %>% ggplot() + geom_line(aes(x= date, y = value)) +  facet_grid(variable~. , scales = "free_y")
+
+long_mean_gm_center %>% filter(variable == c("silvershoot")) %>%  ggplot() + geom_line(aes(x= date, y = value, linetype = var)) +  scale_x_datetime (breaks = date_breaks("months"))
+
+long_mean.percent_gm %>% filter(variable == c("silvershoot")) %>%  ggplot(aes(x= date, y = value, linetype = var)) +  scale_x_datetime (breaks = date_breaks("months")) + geom_line(lwd=1.1)
+
+
+long_mean.percent_gm %>% filter(variable == c("ss.percent")) %>%  ggplot(aes(x= date, y = value, linetype = var))  +
+  geom_line(lwd=1.1) + scale_x_datetime (breaks = date_breaks("months"))
+
+silvershoot <- long_mean.percent_gm %>% filter(variable == c("ss.percent"))
+silvershoot$age <- NULL
+
+ggsave(filename = "gm_graph.pdf")
+
+long_mean.percent_gm$variable
+
+long_mean.percent_gm
+
+silver_center.graph
 
 [1] "silvershoot"      "dwaft"            "nomalplant"       "gallmidge"        "nym_gall"        
 [6] "spider"           "mirid"            "long_crick"       "roove_beetle"     "ladybird"        
@@ -84,8 +115,9 @@ long_mean_gm_center %>% ggplot() + geom_line(aes(x= date, y = value)) +
 [21] "WM"               "Rhis"             "rice_grasshopper" "LF" 
 
 long_mean_gm_center %>% filter(variable == c("silvershoot", "roove_beetle", "ground_beetle", "GLH", "SB", "LF")) %>% 
-  ggplot() + geom_line(aes(x= date, y = value)) + facet_grid(variable~. , scales = "free_y")
+  ggplot() + geom_line(aes(x= date, y = value, color = var)) + facet_grid(variable~., scales = "free_y")
 
+names(long_mean_gm_center)
 #chart.Correlation(mean_gm_center[,c(4,26:27)], histogram=TRUE, pch=19, method = "spearman")
 
 # try_ seasonality
